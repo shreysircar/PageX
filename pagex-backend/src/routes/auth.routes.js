@@ -1,55 +1,79 @@
 import express from "express";
 import bcrypt from "bcrypt";
+import prisma from "../utils/prisma.js";
 import { generateToken } from "../utils/jwt.js";
 
 const router = express.Router();
 
-// TEMP storage (Week 1 only)
-const users = [];
-
-/**
- * POST /auth/register
- */
+// REGISTER
 router.post("/register", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password)
-    return res.status(400).json({ message: "Email & password required" });
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      email.trim() === "" ||
+      password.trim() === ""
+    ) {
+      return res.status(400).json({ message: "Invalid input" });
+    }
 
-  const existingUser = users.find((u) => u.email === email);
-  if (existingUser)
-    return res.status(409).json({ message: "User already exists" });
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists" });
+    }
 
-  const user = {
-    id: users.length + 1,
-    email,
-    password: hashedPassword,
-  };
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  users.push(user);
+    await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+      },
+    });
 
-  res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({ message: "User registered" });
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-/**
- * POST /auth/login
- */
+// LOGIN
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const user = users.find((u) => u.email === email);
-  if (!user)
-    return res.status(401).json({ message: "Invalid credentials" });
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
+      return res.status(400).json({ message: "Invalid input" });
+    }
 
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid)
-    return res.status(401).json({ message: "Invalid credentials" });
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-  const token = generateToken(user);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-  res.json({ token });
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const token = generateToken(user);
+    res.json({ token });
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default router;

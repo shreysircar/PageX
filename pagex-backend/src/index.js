@@ -1,9 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
 import authRoutes from "./routes/auth.routes.js";
 import { authMiddleware } from "./middleware/auth.middleware.js";
+import fileRoutes from "./routes/file.routes.js";
 
 dotenv.config();
 
@@ -12,6 +12,7 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use("/files", fileRoutes);
 
 // Health check
 app.get("/", (req, res) => {
