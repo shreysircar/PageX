@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
 import { authMiddleware } from "./middleware/auth.middleware.js";
 import fileRoutes from "./routes/file.routes.js";
+import searchRoutes from "./routes/search.routes.js";
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/files", fileRoutes);
+app.use("/search", searchRoutes);
 
 // Health check
 app.get("/", (req, res) => {

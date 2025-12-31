@@ -15,13 +15,29 @@ model User {
 }
 
 model File {
-  id           String   @id @default(cuid())
-  filename     String
-  originalName String
-  mimetype     String
-  size         Int
-  path         String
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  createdAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  filename      String
+  originalName  String
+  mimetype      String
+  size          Int
+  path          String
+
+  // ✅ AI / Processing metadata
+  extractedText String?
+  thumbnailPath String?
+  duration      Int?
+
+  embeddings    Embedding[] 
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+
+model Embedding {
+  id        String   @id @default(cuid())
+  vector    Float[]  // ✅ embedding array
+  fileId   String
+  file     File     @relation(fields: [fileId], references: [id])
+  createdAt DateTime @default(now())
 }

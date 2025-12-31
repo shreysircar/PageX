@@ -8,6 +8,8 @@ import { getFileCategory } from "../services/fileType.service.js";
 import { processImage } from "../services/image.service.js";
 import { processDocument } from "../services/document.service.js";
 import { processVideo } from "../services/video.service.js";
+import { generateEmbedding } from "../utils/embeddings.js";
+
 
 
 const router = express.Router();
@@ -33,42 +35,66 @@ router.post(
   authMiddleware,
   upload.single("file"),
   async (req, res) => {
-    const file = req.file;
+    try {
+      const file = req.file;
+      let embeddingVector = null;
+      let processedData = {};
 
-    let processedData = {};
+      const category = getFileCategory(file);
 
-    const category = getFileCategory(file);
+      if (category === "image") {
+        processedData = await processImage(file);
+      }
 
-    if (category === "image") {
-      processedData = await processImage(file);
+      if (category === "document") {
+        processedData = await processDocument(file);
+      }
+
+      if (category === "video") {
+        processedData = await processVideo(file);
+      }
+
+      // Generate embedding ONLY if text exists
+      if (processedData.extractedText) {
+        embeddingVector = await generateEmbedding(processedData.extractedText);
+      }
+
+      // 1️⃣ Create File (NO embedding here)
+      const savedFile = await prisma.file.create({
+        data: {
+          filename: file.filename,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: file.path,
+          userId: req.user.id,
+          extractedText: processedData.extractedText || null,
+          thumbnailPath: processedData.thumbnailPath || null,
+          duration: processedData.duration || null,
+        },
+      });
+
+      // 2️⃣ Store embedding separately
+      if (embeddingVector?.length) {
+        await prisma.embedding.create({
+          data: {
+            vector: embeddingVector,
+            fileId: savedFile.id,
+          },
+        });
+      }
+
+      res.status(201).json({
+        message: "File uploaded & processed",
+        file: savedFile,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Upload failed" });
     }
-
-    if (category === "document") {
-      processedData = await processDocument(file);
-    }
-
-    if (category === "video") {
-      processedData = await processVideo(file);
-    }
-
-    const savedFile = await prisma.file.create({
-      data: {
-        filename: file.filename,
-        originalName: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        path: file.path,
-        userId: req.user.id,
-        ...processedData,
-      },
-    });
-
-    res.status(201).json({
-      message: "File uploaded & processed",
-      file: savedFile,
-    });
   }
 );
+
 
 // LIST FILES
 router.get("/", authMiddleware, async (req, res) => {
