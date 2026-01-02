@@ -28,19 +28,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
       <form
         onSubmit={handleLogin}
-        className="bg-white p-6 rounded shadow w-96"
+        className="w-full max-w-sm rounded-lg border border-border bg-surface p-6 shadow-sm"
       >
-        <h1 className="text-2xl font-bold mb-4">Login to PageX</h1>
+        <h1 className="mb-1 text-2xl font-semibold">
+          Login to PageX
+        </h1>
 
-        {error && <p className="text-red-500 mb-2">{error}</p>}
+        <p className="mb-4 text-sm text-muted">
+          Access your AI-powered documents
+        </p>
+
+        {error && (
+          <p className="mb-3 text-sm text-danger">
+            {error}
+          </p>
+        )}
 
         <input
           type="email"
           placeholder="Email"
-          className="w-full p-2 border mb-3"
+          className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -48,12 +58,15 @@ export default function LoginPage() {
         <input
           type="password"
           placeholder="Password"
-          className="w-full p-2 border mb-3"
+          className="mb-4 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button className="w-full bg-black text-white p-2 rounded">
+        <button
+          type="submit"
+          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover"
+        >
           Login
         </button>
       </form>

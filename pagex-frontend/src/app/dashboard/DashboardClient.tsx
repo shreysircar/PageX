@@ -7,15 +7,27 @@ import { useRouter } from "next/navigation";
 import FileUpload from "@/components/FileUpload";
 import FileList from "@/components/FileList";
 import SearchBar from "@/components/SearchBar";
-import ThemeToggle from "@/components/ThemeToggle";
+import AppShell from "@/components/AppShell";
+import FilePreview from "@/components/FilePreview";
 
 export default function DashboardClient() {
   const router = useRouter();
 
+  /* -------------------- Core State -------------------- */
   const [files, setFiles] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /* -------------------- Preview -------------------- */
+  const [previewFile, setPreviewFile] = useState<any | null>(null);
+
+  /* -------------------- Sort & Filter -------------------- */
+  const [sortBy, setSortBy] = useState<"name" | "type" | "date">("name");
+  const [filterType, setFilterType] = useState<
+    "all" | "pdf" | "image" | "audio" | "text"
+  >("all");
+
+  /* -------------------- Fetch Files -------------------- */
   const fetchFiles = async () => {
     try {
       const data = await apiRequest("/files");
@@ -32,41 +44,123 @@ export default function DashboardClient() {
     fetchFiles();
   }, []);
 
+  /* -------------------- Row Actions -------------------- */
+  const handlePreview = (file: any) => {
+    setPreviewFile(file);
+  };
+
+  const handleDelete = async (fileId: string) => {
+    try {
+      await apiRequest(`/files/${fileId}`, { method: "DELETE" });
+
+      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+      setSearchResults((prev) =>
+        prev ? prev.filter((f) => f.id !== fileId) : prev
+      );
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
+  };
+
+  /* -------------------- Derived View -------------------- */
+  const activeFiles = searchResults ?? files;
+
+  const filteredFiles = activeFiles.filter((file) => {
+    if (filterType === "all") return true;
+
+    const type = file.mimetype.toLowerCase();
+
+    if (filterType === "pdf") return type.includes("pdf");
+    if (filterType === "image") return type.startsWith("image/");
+    if (filterType === "audio") return type.startsWith("audio/");
+    if (filterType === "text") return type.startsWith("text/");
+
+    return true;
+  });
+
+  const sortedFiles = [...filteredFiles].sort((a, b) => {
+    if (sortBy === "name") {
+      return a.originalName.localeCompare(b.originalName);
+    }
+
+    if (sortBy === "type") {
+      return a.mimetype.localeCompare(b.mimetype);
+    }
+
+    if (sortBy === "date") {
+      const da = new Date(a.createdAt ?? 0).getTime();
+      const db = new Date(b.createdAt ?? 0).getTime();
+      return db - da;
+    }
+
+    return 0;
+  });
+
+  /* -------------------- Render -------------------- */
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Utility Header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-3">
-          <h1 className="text-lg font-semibold tracking-tight">
-            📂 PageX
-          </h1>
+    <AppShell>
+      <div className="space-y-8">
+        {/* SEARCH — PRIMARY */}
+        <SearchBar
+          onResults={setSearchResults}
+          onClear={() => setSearchResults(null)}
+        />
 
-          <div className="flex-1">
-            <SearchBar onResults={setSearchResults} />
-          </div>
+        {/* SORT & FILTER */}
+        <div className="flex items-center gap-3">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
+          >
+            <option value="name">Sort by Name</option>
+            <option value="type">Sort by Type</option>
+            <option value="date">Sort by Date</option>
+          </select>
 
-          <ThemeToggle />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as any)}
+            className="rounded-md border border-border bg-surface px-2 py-1 text-xs"
+          >
+            <option value="all">All Types</option>
+            <option value="pdf">PDF</option>
+            <option value="image">Image</option>
+            <option value="audio">Audio</option>
+            <option value="text">Text</option>
+          </select>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-5xl space-y-6 px-6 py-6">
-        <FileUpload onUploadSuccess={fetchFiles} />
-
+        {/* RESULTS */}
         {loading ? (
           <p className="text-muted">Loading files...</p>
-        ) : searchResults ? (
-          <>
-            <h2 className="font-semibold">Search Results</h2>
-            <FileList files={searchResults} />
-          </>
         ) : (
           <>
-            <h2 className="font-semibold">Your Files</h2>
-            <FileList files={files} />
+            <h2 className="text-xs font-medium uppercase tracking-wide text-muted">
+              {searchResults ? "Search Results" : "All Files"}
+            </h2>
+
+            <FileList
+              files={sortedFiles}
+              onPreview={handlePreview}
+              onDelete={handleDelete}
+            />
           </>
         )}
-      </main>
-    </div>
+
+        {/* UPLOAD — SECONDARY */}
+        <div className="pt-4 border-t border-border">
+          <FileUpload onUploadSuccess={fetchFiles} />
+        </div>
+      </div>
+
+      {/* FILE PREVIEW PANEL */}
+      {previewFile && (
+        <FilePreview
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
+    </AppShell>
   );
 }
