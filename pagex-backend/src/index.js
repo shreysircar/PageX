@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes.js";
 import { authMiddleware } from "./middleware/auth.middleware.js";
 import fileRoutes from "./routes/file.routes.js";
 import searchRoutes from "./routes/search.routes.js";
+import { cleanupTrashedFiles } from "./utils/trashCleanup.js";
 
 dotenv.config();
 
@@ -36,4 +37,12 @@ app.get("/protected", authMiddleware, (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 PageX backend running on port ${PORT}`);
+
+  // 🧹 Run cleanup once on startup
+  cleanupTrashedFiles();
+
+  // 🕒 Run cleanup every 24 hours
+  setInterval(() => {
+    cleanupTrashedFiles();
+  }, 24 * 60 * 60 * 1000);
 });

@@ -2,23 +2,39 @@ import FileRow from "@/components/FileRow";
 
 interface Props {
   files: any[];
+  selectedIds: string[];
+  onSelect: (id: string) => void;
+  onSelectAll: () => void;
   onPreview: (file: any) => void;
   onDelete: (fileId: string) => void;
 }
 
-export default function FileList({ files, onPreview, onDelete }: Props) {
-  if (files.length === 0) {
-    return <p className="text-sm text-muted">No files available.</p>;
-  }
+export default function FileList({
+  files,
+  selectedIds,
+  onSelect,
+  onSelectAll,
+  onPreview,
+  onDelete,
+}: Props) {
+  const allSelected =
+    files.length > 0 && files.every((f) => selectedIds.includes(f.id));
 
   return (
     <div className="overflow-hidden rounded-lg border border-border">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full text-sm">
         <thead className="bg-surface">
-          <tr className="border-b border-border text-left text-xs font-medium text-muted">
-            <th className="px-4 py-2">Name</th>
-            <th className="px-4 py-2">Type</th>
-            <th className="px-4 py-2">Duration</th>
+          <tr className="border-b border-border text-xs text-muted">
+            <th className="px-3">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={onSelectAll}
+              />
+            </th>
+            <th className="px-4 py-2 text-left">Name</th>
+            <th className="px-4 py-2 text-left">Type</th>
+            <th className="px-4 py-2 text-left">Duration</th>
             <th className="px-4 py-2 text-right">Actions</th>
           </tr>
         </thead>
@@ -28,6 +44,8 @@ export default function FileList({ files, onPreview, onDelete }: Props) {
             <FileRow
               key={file.id}
               file={file}
+              selected={selectedIds.includes(file.id)}
+              onSelect={onSelect}
               onPreview={onPreview}
               onDelete={onDelete}
             />

@@ -4,13 +4,30 @@ import { Eye, Trash2 } from "lucide-react";
 
 interface Props {
   file: any;
+  selected: boolean;
+  onSelect: (id: string) => void;
   onPreview: (file: any) => void;
   onDelete: (fileId: string) => void;
 }
 
-export default function FileRow({ file, onPreview, onDelete }: Props) {
+export default function FileRow({
+  file,
+  selected,
+  onSelect,
+  onPreview,
+  onDelete,
+}: Props) {
   return (
-    <tr className="group border-b border-border transition hover:bg-border">
+    <tr className="group border-b border-border hover:bg-border">
+      {/* Checkbox */}
+      <td className="px-3">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onSelect(file.id)}
+        />
+      </td>
+
       {/* Name */}
       <td className="px-4 py-3 font-medium text-foreground">
         {file.originalName}
@@ -30,8 +47,6 @@ export default function FileRow({ file, onPreview, onDelete }: Props) {
       <td className="px-4 py-3 text-right">
         <div className="flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
           <button
-            type="button"
-            aria-label="Preview"
             onClick={() => onPreview(file)}
             className="rounded-md p-1 text-muted hover:bg-surface hover:text-foreground"
           >
@@ -39,8 +54,6 @@ export default function FileRow({ file, onPreview, onDelete }: Props) {
           </button>
 
           <button
-            type="button"
-            aria-label="Delete"
             onClick={() => onDelete(file.id)}
             className="rounded-md p-1 text-muted hover:bg-surface hover:text-danger"
           >

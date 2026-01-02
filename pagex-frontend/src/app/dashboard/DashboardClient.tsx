@@ -27,6 +27,9 @@ export default function DashboardClient() {
     "all" | "pdf" | "image" | "audio" | "text"
   >("all");
 
+  /* -------------------- Multi-Select -------------------- */
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   /* -------------------- Fetch Files -------------------- */
   const fetchFiles = async () => {
     try {
@@ -57,6 +60,7 @@ export default function DashboardClient() {
       setSearchResults((prev) =>
         prev ? prev.filter((f) => f.id !== fileId) : prev
       );
+      setSelectedIds((prev) => prev.filter((id) => id !== fileId));
     } catch (err) {
       console.error("Delete failed", err);
     }
@@ -69,12 +73,10 @@ export default function DashboardClient() {
     if (filterType === "all") return true;
 
     const type = file.mimetype.toLowerCase();
-
     if (filterType === "pdf") return type.includes("pdf");
     if (filterType === "image") return type.startsWith("image/");
     if (filterType === "audio") return type.startsWith("audio/");
     if (filterType === "text") return type.startsWith("text/");
-
     return true;
   });
 
@@ -82,25 +84,44 @@ export default function DashboardClient() {
     if (sortBy === "name") {
       return a.originalName.localeCompare(b.originalName);
     }
-
     if (sortBy === "type") {
       return a.mimetype.localeCompare(b.mimetype);
     }
-
     if (sortBy === "date") {
       const da = new Date(a.createdAt ?? 0).getTime();
       const db = new Date(b.createdAt ?? 0).getTime();
       return db - da;
     }
-
     return 0;
   });
+
+  /* -------------------- Selection Logic -------------------- */
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    if (selectedIds.length === sortedFiles.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(sortedFiles.map((f) => f.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    for (const id of selectedIds) {
+      await handleDelete(id);
+    }
+    setSelectedIds([]);
+  };
 
   /* -------------------- Render -------------------- */
   return (
     <AppShell>
-      <div className="space-y-8">
-        {/* SEARCH — PRIMARY */}
+      <div className="space-y-6">
+        {/* SEARCH */}
         <SearchBar
           onResults={setSearchResults}
           onClear={() => setSearchResults(null)}
@@ -131,6 +152,21 @@ export default function DashboardClient() {
           </select>
         </div>
 
+        {/* BULK ACTION BAR */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 rounded-md border border-border bg-surface px-3 py-2">
+            <span className="text-xs text-muted">
+              {selectedIds.length} selected
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              className="text-xs font-medium text-danger hover:underline"
+            >
+              Delete selected
+            </button>
+          </div>
+        )}
+
         {/* RESULTS */}
         {loading ? (
           <p className="text-muted">Loading files...</p>
@@ -142,19 +178,22 @@ export default function DashboardClient() {
 
             <FileList
               files={sortedFiles}
+              selectedIds={selectedIds}
+              onSelect={toggleSelect}
+              onSelectAll={selectAll}
               onPreview={handlePreview}
               onDelete={handleDelete}
             />
           </>
         )}
 
-        {/* UPLOAD — SECONDARY */}
+        {/* UPLOAD */}
         <div className="pt-4 border-t border-border">
           <FileUpload onUploadSuccess={fetchFiles} />
         </div>
       </div>
 
-      {/* FILE PREVIEW PANEL */}
+      {/* FILE PREVIEW */}
       {previewFile && (
         <FilePreview
           file={previewFile}

@@ -29,6 +29,7 @@ model File {
 
   embeddings    Embedding[] 
   userId        String
+  deletedAt      DateTime? 
   user          User     @relation(fields: [userId], references: [id])
   createdAt     DateTime @default(now())
 }
