@@ -31,19 +31,26 @@ router.post("/", authMiddleware, async (req, res) => {
     });
 
     // 3️⃣ Rank by cosine similarity
-    const ranked = files
-      .map((file) => {
-        const vector = file.embeddings[0]?.vector;
-        if (!vector) return null;
+   const ranked = files
+  .map((file) => {
+    let bestScore = -1;
 
-        return {
-          id: file.id,
-          originalName: file.originalName,
-          score: cosineSimilarity(queryEmbedding, vector),
-        };
-      })
-      .filter((f) => f && f.score > 0.2)
-      .sort((a, b) => b.score - a.score);
+    for (const emb of file.embeddings) {
+      const score = cosineSimilarity(queryEmbedding, emb.vector);
+      if (score > bestScore) bestScore = score;
+    }
+
+    if (bestScore < 0.2) return null;
+
+    return {
+      id: file.id,
+      originalName: file.originalName,
+      score: bestScore,
+    };
+  })
+  .filter(Boolean)
+  .sort((a, b) => b.score - a.score);
+
 
     // 4️⃣ Keyword fallback
     if (ranked.length === 0) {

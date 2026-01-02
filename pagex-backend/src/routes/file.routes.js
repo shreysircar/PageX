@@ -1,7 +1,6 @@
 import express from "express";
 import multer from "multer";
 import fs from "fs";
-import path from "path";
 import prisma from "../utils/prisma.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { getFileCategory } from "../services/fileType.service.js";
@@ -10,10 +9,26 @@ import { processDocument } from "../services/document.service.js";
 import { processVideo } from "../services/video.service.js";
 import { generateEmbedding } from "../utils/embeddings.js";
 
-
-
 const router = express.Router();
 
+/* =========================
+   TEXT CHUNKING HELPER
+========================= */
+function chunkText(text, chunkSize = 500, overlap = 100) {
+  const chunks = [];
+  let start = 0;
+
+  while (start < text.length) {
+    chunks.push(text.slice(start, start + chunkSize));
+    start += chunkSize - overlap;
+  }
+
+  return chunks;
+}
+
+/* =========================
+   MULTER STORAGE
+========================= */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const userDir = `src/uploads/${req.user.id}`;
@@ -29,7 +44,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// UPLOAD FILE
+/* =========================
+   UPLOAD FILE
+========================= */
 router.post(
   "/upload",
   authMiddleware,
@@ -37,7 +54,6 @@ router.post(
   async (req, res) => {
     try {
       const file = req.file;
-      let embeddingVector = null;
       let processedData = {};
 
       const category = getFileCategory(file);
@@ -54,12 +70,7 @@ router.post(
         processedData = await processVideo(file);
       }
 
-      // Generate embedding ONLY if text exists
-      if (processedData.extractedText) {
-        embeddingVector = await generateEmbedding(processedData.extractedText);
-      }
-
-      // 1️⃣ Create File (NO embedding here)
+      // 1️⃣ Save file metadata (NO embeddings here)
       const savedFile = await prisma.file.create({
         data: {
           filename: file.filename,
@@ -74,18 +85,24 @@ router.post(
         },
       });
 
-      // 2️⃣ Store embedding separately
-      if (embeddingVector?.length) {
-        await prisma.embedding.create({
-          data: {
-            vector: embeddingVector,
+      // 2️⃣ Generate & store CHUNKED embeddings
+      if (processedData.extractedText) {
+        const chunks = chunkText(processedData.extractedText);
+
+        const vectors = await Promise.all(
+          chunks.map((chunk) => generateEmbedding(chunk))
+        );
+
+        await prisma.embedding.createMany({
+          data: vectors.map((vector) => ({
+            vector,
             fileId: savedFile.id,
-          },
+          })),
         });
       }
 
       res.status(201).json({
-        message: "File uploaded & processed",
+        message: "File uploaded, processed & indexed",
         file: savedFile,
       });
     } catch (err) {
@@ -95,13 +112,14 @@ router.post(
   }
 );
 
-
-// LIST FILES (exclude trash)
+/* =========================
+   LIST FILES (NON-TRASH)
+========================= */
 router.get("/", authMiddleware, async (req, res) => {
   const files = await prisma.file.findMany({
     where: {
       userId: req.user.id,
-      deletedAt: null, // 👈 KEY LINE
+      deletedAt: null,
     },
     orderBy: {
       createdAt: "desc",
@@ -111,7 +129,9 @@ router.get("/", authMiddleware, async (req, res) => {
   res.json(files);
 });
 
-// LIST TRASH
+/* =========================
+   LIST TRASH
+========================= */
 router.get("/trash", authMiddleware, async (req, res) => {
   const files = await prisma.file.findMany({
     where: {
@@ -124,8 +144,9 @@ router.get("/trash", authMiddleware, async (req, res) => {
   res.json(files);
 });
 
-
-// MOVE TO TRASH (soft delete)
+/* =========================
+   MOVE TO TRASH
+========================= */
 router.delete("/:id", authMiddleware, async (req, res) => {
   const { id } = req.params;
 
@@ -145,7 +166,9 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   res.json({ message: "File moved to trash" });
 });
 
-// RESTORE FILE FROM TRASH
+/* =========================
+   RESTORE FROM TRASH
+========================= */
 router.post("/:id/restore", authMiddleware, async (req, res) => {
   const file = await prisma.file.findFirst({
     where: {
@@ -167,8 +190,9 @@ router.post("/:id/restore", authMiddleware, async (req, res) => {
   res.json({ message: "File restored successfully" });
 });
 
-
-// DELETE FOREVER
+/* =========================
+   DELETE FOREVER
+========================= */
 router.delete("/:id/force", authMiddleware, async (req, res) => {
   const file = await prisma.file.findFirst({
     where: { id: req.params.id, userId: req.user.id },
@@ -183,16 +207,17 @@ router.delete("/:id/force", authMiddleware, async (req, res) => {
     fs.unlinkSync(file.path);
   }
 
-  // delete embedding
+  // delete embeddings
   await prisma.embedding.deleteMany({
     where: { fileId: file.id },
   });
 
-  // delete DB record
-  await prisma.file.delete({ where: { id: file.id } });
+  // delete file record
+  await prisma.file.delete({
+    where: { id: file.id },
+  });
 
   res.json({ message: "File permanently deleted" });
 });
-
 
 export default router;
