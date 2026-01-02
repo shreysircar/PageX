@@ -45,23 +45,46 @@ export default function FileUpload({ onUploadSuccess }: Props) {
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow mb-6">
-      <h2 className="font-semibold mb-2">Upload File</h2>
+    <div className="rounded-lg border border-border bg-surface p-5">
+      <h2 className="mb-3 text-sm font-semibold tracking-wide text-foreground">
+        Upload File
+      </h2>
 
-      {error && <p className="text-red-500 mb-2">{error}</p>}
+      {/* Error */}
+      {error && (
+        <p className="mb-3 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
-      <input
-        type="file"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
+      {/* Upload Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-4 py-2 text-sm text-muted hover:bg-border transition">
+          <span>📄 Choose file</span>
+          <input
+            type="file"
+            className="hidden"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+        </label>
 
-      <button
-        onClick={handleUpload}
-        disabled={!file || uploading}
-        className="ml-3 px-4 py-2 bg-black text-white rounded disabled:opacity-50"
-      >
-        {uploading ? "Uploading..." : "Upload"}
-      </button>
+        {file && (
+          <span className="text-sm text-muted">
+            {file.name}
+          </span>
+        )}
+
+        <button
+          onClick={handleUpload}
+          disabled={!file || uploading}
+          className="
+            ml-auto rounded-md bg-primary px-4 py-2 text-sm font-medium text-white
+            transition hover:bg-primary-hover disabled:opacity-50
+          "
+        >
+          {uploading ? "Uploading..." : "Upload"}
+        </button>
+      </div>
     </div>
   );
 }

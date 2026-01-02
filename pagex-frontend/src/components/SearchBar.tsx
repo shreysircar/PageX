@@ -36,17 +36,33 @@ export default function SearchBar({ onResults }: Props) {
   return (
     <form
       onSubmit={handleSearch}
-      className="bg-white p-4 rounded shadow mb-6"
+      className="
+        rounded-lg border border-border bg-surface p-4
+        shadow-sm
+      "
     >
-      <h2 className="font-semibold mb-2">🔍 AI Search</h2>
+      {/* Header */}
+      <h2 className="mb-2 text-sm font-semibold tracking-wide text-foreground">
+        🔍 AI Search
+      </h2>
 
-      {error && <p className="text-red-500 mb-2">{error}</p>}
+      {/* Error */}
+      {error && (
+        <p className="mb-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
-      <div className="flex gap-2">
+      {/* Search Row */}
+      <div className="flex items-center gap-2">
         <input
           type="text"
-          placeholder="Search by meaning (e.g. amazon receipt)"
-          className="flex-1 border p-2 rounded"
+          placeholder="Search by meaning (e.g. Amazon receipt)"
+          className="
+            flex-1 rounded-md border border-border bg-background px-3 py-2
+            text-sm text-foreground placeholder:text-muted
+            focus:outline-none focus:ring-2 focus:ring-primary
+          "
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -54,7 +70,10 @@ export default function SearchBar({ onResults }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
+          className="
+            rounded-md bg-primary px-4 py-2 text-sm font-medium text-white
+            transition hover:bg-primary-hover disabled:opacity-50
+          "
         >
           {loading ? "Searching..." : "Search"}
         </button>

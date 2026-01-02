@@ -1,24 +1,93 @@
 @import "tailwindcss";
 
+/* =====================================================
+   Base Theme Variables (DEFAULT = LIGHT)
+   ===================================================== */
 :root {
+  /* Existing variables (kept) */
   --background: #ffffff;
   --foreground: #171717;
+
+  /* New semantic UI tokens */
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --muted: #6b7280;
+
+  --primary: #6d5df6;
+  --primary-hover: #5b4be0;
+  --accent: #22c55e;
+  --danger: #ef4444;
 }
 
+/* =====================================================
+   Tailwind Theme Mapping (KEEPING YOUR SETUP)
+   ===================================================== */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* New mappings */
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* =====================================================
+   AI MODE (Dark Theme)
+   Applied when: <html data-theme="dark">
+   ===================================================== */
+html[data-theme="dark"] {
+  --background: #0b0f14;
+  --foreground: #e5e7eb;
+
+  --surface: #121826;
+  --border: #1f2937;
+  --muted: #9ca3af;
+
+  --primary: #7c7cff;
+  --primary-hover: #6366f1;
+  --accent: #22d3ee;
+  --danger: #f87171;
+}
+
+/* =====================================================
+   BRAND MODE (Colored / Demo Theme)
+   Applied when: <html data-theme="brand">
+   ===================================================== */
+html[data-theme="brand"] {
+  --background: linear-gradient(135deg, #0f172a, #1e1b4b);
+  --foreground: #ffffff;
+
+  --surface: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.12);
+  --muted: #cbd5f5;
+
+  --primary: #a78bfa;
+  --primary-hover: #8b5cf6;
+  --accent: #34d399;
+  --danger: #fb7185;
+}
+
+/* =====================================================
+   System Dark Mode Fallback (UNCHANGED BEHAVIOR)
+   ===================================================== */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
 }
 
+/* =====================================================
+   Base Body Styles (UNCHANGED)
+   ===================================================== */
 body {
   background: var(--background);
   color: var(--foreground);
