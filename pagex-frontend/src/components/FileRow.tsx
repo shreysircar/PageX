@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Trash2 } from "lucide-react";
+import { Eye, Trash2, RotateCcw } from "lucide-react";
 
 interface Props {
   file: any;
@@ -8,6 +8,8 @@ interface Props {
   onSelect: (id: string) => void;
   onPreview: (file: any) => void;
   onDelete: (fileId: string) => void;
+  onForceDelete?: (fileId: string) => void; // ✅ NEW
+  mode?: "default" | "trash";
 }
 
 export default function FileRow({
@@ -16,10 +18,11 @@ export default function FileRow({
   onSelect,
   onPreview,
   onDelete,
+  onForceDelete,
+  mode = "default",
 }: Props) {
   return (
     <tr className="group border-b border-border hover:bg-border">
-      {/* Checkbox */}
       <td className="px-3">
         <input
           type="checkbox"
@@ -28,22 +31,18 @@ export default function FileRow({
         />
       </td>
 
-      {/* Name */}
-      <td className="px-4 py-3 font-medium text-foreground">
+      <td className="px-4 py-3 font-medium">
         {file.originalName}
       </td>
 
-      {/* Type */}
       <td className="px-4 py-3 text-muted">
         {file.mimetype}
       </td>
 
-      {/* Duration */}
       <td className="px-4 py-3 text-muted">
         {file.duration ? `⏱ ${file.duration}s` : "—"}
       </td>
 
-      {/* Actions */}
       <td className="px-4 py-3 text-right">
         <div className="flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
           <button
@@ -53,12 +52,33 @@ export default function FileRow({
             <Eye className="h-4 w-4" />
           </button>
 
-          <button
-            onClick={() => onDelete(file.id)}
-            className="rounded-md p-1 text-muted hover:bg-surface hover:text-danger"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {mode === "trash" ? (
+            <>
+              <button
+                onClick={() => onDelete(file.id)}
+                title="Restore"
+                className="rounded-md p-1 text-muted hover:bg-surface hover:text-primary"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() => onForceDelete?.(file.id)}
+                title="Delete forever"
+                className="rounded-md p-1 text-muted hover:bg-surface hover:text-danger"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => onDelete(file.id)}
+              title="Delete"
+              className="rounded-md p-1 text-muted hover:bg-surface hover:text-danger"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </td>
     </tr>

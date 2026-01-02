@@ -9,9 +9,11 @@ import FileList from "@/components/FileList";
 import SearchBar from "@/components/SearchBar";
 import AppShell from "@/components/AppShell";
 import FilePreview from "@/components/FilePreview";
+import { useToast } from "@/components/ToastProvider";
 
 export default function DashboardClient() {
   const router = useRouter();
+  const toast = useToast();
 
   /* -------------------- Core State -------------------- */
   const [files, setFiles] = useState<any[]>([]);
@@ -61,8 +63,11 @@ export default function DashboardClient() {
         prev ? prev.filter((f) => f.id !== fileId) : prev
       );
       setSelectedIds((prev) => prev.filter((id) => id !== fileId));
+
+      toast("Moved to trash");
     } catch (err) {
       console.error("Delete failed", err);
+      toast("Delete failed", "danger");
     }
   };
 
@@ -115,6 +120,7 @@ export default function DashboardClient() {
       await handleDelete(id);
     }
     setSelectedIds([]);
+    toast("Selected files moved to trash");
   };
 
   /* -------------------- Render -------------------- */

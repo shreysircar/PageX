@@ -7,6 +7,8 @@ interface Props {
   onSelectAll: () => void;
   onPreview: (file: any) => void;
   onDelete: (fileId: string) => void;
+  onForceDelete?: (fileId: string) => void; // ✅ ADD THIS
+  mode?: "default" | "trash";               // already added earlier
 }
 
 export default function FileList({
@@ -16,6 +18,8 @@ export default function FileList({
   onSelectAll,
   onPreview,
   onDelete,
+  onForceDelete,
+  mode = "default",
 }: Props) {
   const allSelected =
     files.length > 0 && files.every((f) => selectedIds.includes(f.id));
@@ -48,6 +52,8 @@ export default function FileList({
               onSelect={onSelect}
               onPreview={onPreview}
               onDelete={onDelete}
+              onForceDelete={onForceDelete} // ✅ PASS THROUGH
+              mode={mode}
             />
           ))}
         </tbody>

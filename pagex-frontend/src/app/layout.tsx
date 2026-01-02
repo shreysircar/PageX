@@ -1,9 +1,5 @@
 import "./globals.css";
-
-export const metadata = {
-  title: "PageX",
-  description: "AI-powered cloud drive",
-};
+import { ToastProvider } from "@/components/ToastProvider";
 
 export default function RootLayout({
   children,
@@ -12,8 +8,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-background text-foreground">
-        {children}
+      <body>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

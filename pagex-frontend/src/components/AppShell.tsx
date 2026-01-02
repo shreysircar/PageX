@@ -1,13 +1,17 @@
 "use client";
 
-import { Files, Search, Settings } from "lucide-react";
+import { Files, Trash2, Settings } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function AppShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Left Rail */}
@@ -19,17 +23,29 @@ export default function AppShell({
 
         {/* Primary Navigation */}
         <nav className="flex flex-col gap-3">
-          <RailIcon label="Files">
+          <RailLink
+            href="/dashboard"
+            label="Files"
+            active={pathname === "/dashboard"}
+          >
             <Files className="h-5 w-5" />
-          </RailIcon>
+          </RailLink>
 
-          <RailIcon label="Search">
-            <Search className="h-5 w-5" />
-          </RailIcon>
+          <RailLink
+            href="/trash"
+            label="Trash"
+            active={pathname === "/trash"}
+          >
+            <Trash2 className="h-5 w-5" />
+          </RailLink>
 
-          <RailIcon label="Settings">
+          <RailLink
+            href="/settings"
+            label="Settings"
+            active={pathname === "/settings"}
+          >
             <Settings className="h-5 w-5" />
-          </RailIcon>
+          </RailLink>
         </nav>
 
         {/* Bottom Preferences */}
@@ -52,19 +68,35 @@ export default function AppShell({
   );
 }
 
-function RailIcon({
+/* ----------------------------------------
+   Left Rail Link Button
+---------------------------------------- */
+function RailLink({
   children,
   label,
+  href,
+  active,
 }: {
   children: React.ReactNode;
   label: string;
+  href: string;
+  active?: boolean;
 }) {
   return (
-    <button
+    <Link
+      href={href}
       aria-label={label}
-      className="flex h-9 w-9 items-center justify-center rounded-md text-muted transition hover:bg-border hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+      className={`
+        flex h-9 w-9 items-center justify-center rounded-md transition
+        ${
+          active
+            ? "bg-border text-foreground"
+            : "text-muted hover:bg-border hover:text-foreground"
+        }
+        focus:outline-none focus:ring-2 focus:ring-primary
+      `}
     >
       {children}
-    </button>
+    </Link>
   );
 }
