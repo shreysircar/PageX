@@ -7,9 +7,14 @@ import { ArrowRight } from "lucide-react";
 interface Props {
   onResults: (results: any[]) => void;
   onClear: () => void;
+  onSearchType?: (type: "filename" | "semantic" | "keyword") => void;
 }
 
-export default function SearchBar({ onResults, onClear }: Props) {
+export default function SearchBar({
+  onResults,
+  onClear,
+  onSearchType,
+}: Props) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,7 +31,14 @@ export default function SearchBar({ onResults, onClear }: Props) {
         method: "POST",
         body: JSON.stringify({ query }),
       });
+
+      // 🔑 Pass results up
       onResults(res.results);
+
+      // 🔑 Inform parent about search type (for UX wording)
+      if (onSearchType && res.type) {
+        onSearchType(res.type);
+      }
     } catch (err: any) {
       setError(err.message || "Search failed");
     } finally {
@@ -41,17 +53,17 @@ export default function SearchBar({ onResults, onClear }: Props) {
     >
       <input
         type="text"
-        placeholder="Search documents by meaning…"
+        placeholder="Search files or content…"
         className="flex-1 bg-transparent px-2 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none"
         value={query}
         onChange={(e) => {
           const value = e.target.value;
           setQuery(value);
 
-          // ✅ THIS is the key behavior
           if (value.trim() === "") {
             onClear();
             setError("");
+            onSearchType?.("filename"); // reset state
           }
         }}
       />

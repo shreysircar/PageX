@@ -11,6 +11,8 @@ import AppShell from "@/components/AppShell";
 import FilePreview from "@/components/FilePreview";
 import { useToast } from "@/components/ToastProvider";
 
+type SearchType = "filename" | "semantic" | "keyword";
+
 export default function DashboardClient() {
   const router = useRouter();
   const toast = useToast();
@@ -18,6 +20,7 @@ export default function DashboardClient() {
   /* -------------------- Core State -------------------- */
   const [files, setFiles] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [searchType, setSearchType] = useState<SearchType>("filename");
   const [loading, setLoading] = useState(true);
 
   /* -------------------- Preview -------------------- */
@@ -130,8 +133,19 @@ export default function DashboardClient() {
         {/* SEARCH */}
         <SearchBar
           onResults={setSearchResults}
-          onClear={() => setSearchResults(null)}
+          onClear={() => {
+            setSearchResults(null);
+            setSearchType("filename");
+          }}
+          onSearchType={setSearchType}
         />
+
+        {/* 🔎 SEMANTIC SEARCH HINT */}
+        {searchResults && searchType === "semantic" && (
+          <p className="text-xs text-muted">
+            Showing results by content
+          </p>
+        )}
 
         {/* SORT & FILTER */}
         <div className="flex items-center gap-3">
