@@ -129,6 +129,7 @@ router.get("/", authMiddleware, async (req, res) => {
   res.json(files);
 });
 
+
 /* =========================
    LIST TRASH
 ========================= */
@@ -143,6 +144,32 @@ router.get("/trash", authMiddleware, async (req, res) => {
 
   res.json(files);
 });
+
+
+// DOWNLOAD FILE
+router.get("/:id/download", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  const file = await prisma.file.findFirst({
+    where: {
+      id,
+      userId: req.user.id,
+      deletedAt: null,
+    },
+  });
+
+  if (!file) {
+    return res.status(404).json({ message: "File not found" });
+  }
+
+  if (!fs.existsSync(file.path)) {
+    return res.status(404).json({ message: "File missing on disk" });
+  }
+
+  res.download(file.path, file.originalName);
+});
+
+
 
 /* =========================
    MOVE TO TRASH

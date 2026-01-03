@@ -6,7 +6,10 @@ export const authMiddleware = (req, res, next) => {
   if (!authHeader || !authHeader.startsWith("Bearer "))
     return res.status(401).json({ message: "Token missing" });
 
-  const token = authHeader.split(" ")[1];
+  const token =
+  req.headers.authorization?.split(" ")[1] ||
+  req.query.token;
+
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
