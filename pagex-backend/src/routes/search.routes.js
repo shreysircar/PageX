@@ -10,73 +10,104 @@ router.post("/", authMiddleware, async (req, res) => {
   try {
     const { query } = req.body;
 
-    if (!query) {
+    if (!query || !query.trim()) {
       return res.status(400).json({ message: "Search query required" });
     }
 
-    // 1️⃣ Generate query embedding
-    const queryEmbedding = await generateEmbedding(query);
-
-    // 2️⃣ Fetch ONLY files that have embeddings
-    const files = await prisma.file.findMany({
+    /* =====================================================
+       1️⃣ FILENAME-FIRST SEARCH (USER INTENT: FILE RECALL)
+    ===================================================== */
+    const filenameResults = await prisma.file.findMany({
       where: {
         userId: req.user.id,
-        embeddings: {
-          some: {}, // ✅ KEY FIX
+        deletedAt: null,
+        originalName: {
+          contains: query,
+          mode: "insensitive",
         },
       },
-      include: {
-        embeddings: true, // ✅ load vectors
+      select: {
+        id: true,
+        originalName: true,
       },
     });
 
-    // 3️⃣ Rank by cosine similarity
-   const ranked = files
-  .map((file) => {
-    let bestScore = -1;
-
-    for (const emb of file.embeddings) {
-      const score = cosineSimilarity(queryEmbedding, emb.vector);
-      if (score > bestScore) bestScore = score;
-    }
-
-    if (bestScore < 0.2) return null;
-
-    return {
-      id: file.id,
-      originalName: file.originalName,
-      score: bestScore,
-    };
-  })
-  .filter(Boolean)
-  .sort((a, b) => b.score - a.score);
-
-
-    // 4️⃣ Keyword fallback
-    if (ranked.length === 0) {
-      const keywordResults = await prisma.file.findMany({
-        where: {
-          userId: req.user.id,
-          OR: [
-            { originalName: { contains: query, mode: "insensitive" } },
-            { extractedText: { contains: query, mode: "insensitive" } },
-          ],
-        },
-        select: {
-          id: true,
-          originalName: true,
-        },
-      });
-
+    if (filenameResults.length > 0) {
       return res.json({
-        type: "keyword",
-        results: keywordResults,
+        type: "filename",
+        results: filenameResults,
       });
     }
 
-    res.json({
-      type: "semantic",
-      results: ranked,
+    /* =====================================================
+       2️⃣ SEMANTIC SEARCH (USER INTENT: CONTENT DISCOVERY)
+    ===================================================== */
+    const queryEmbedding = await generateEmbedding(query);
+
+    const files = await prisma.file.findMany({
+      where: {
+        userId: req.user.id,
+        deletedAt: null,
+        embeddings: {
+          some: {},
+        },
+      },
+      include: {
+        embeddings: true,
+      },
+    });
+
+    const semanticResults = files
+      .map((file) => {
+        let bestScore = -1;
+
+        for (const emb of file.embeddings) {
+          const score = cosineSimilarity(queryEmbedding, emb.vector);
+          if (score > bestScore) bestScore = score;
+        }
+
+        // semantic threshold (tuned)
+        if (bestScore < 0.35) return null;
+
+        return {
+          id: file.id,
+          originalName: file.originalName,
+          score: Number(bestScore.toFixed(3)),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score);
+
+    if (semanticResults.length > 0) {
+      return res.json({
+        type: "semantic",
+        message: "Showing results by content",
+        results: semanticResults,
+      });
+    }
+
+    /* =====================================================
+       3️⃣ KEYWORD FALLBACK (LAST RESORT)
+    ===================================================== */
+    const keywordResults = await prisma.file.findMany({
+      where: {
+        userId: req.user.id,
+        deletedAt: null,
+        OR: [
+          { originalName: { contains: query, mode: "insensitive" } },
+          { extractedText: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      select: {
+        id: true,
+        originalName: true,
+      },
+    });
+
+    return res.json({
+      type: "keyword",
+      message: "Showing results by keyword match",
+      results: keywordResults,
     });
   } catch (err) {
     console.error(err);
