@@ -4,9 +4,13 @@ import { useState } from "react";
 
 interface Props {
   onUploadSuccess: () => void;
+  folderId?: string | null;
 }
 
-export default function FileUpload({ onUploadSuccess }: Props) {
+export default function FileUpload({
+  onUploadSuccess,
+  folderId = null,
+}: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -19,7 +23,13 @@ export default function FileUpload({ onUploadSuccess }: Props) {
 
     const token = localStorage.getItem("token");
     const formData = new FormData();
+
     formData.append("file", file);
+
+    // ✅ Folder-aware upload
+    if (folderId) {
+      formData.append("folderId", folderId);
+    }
 
     try {
       const res = await fetch("http://localhost:5000/files/upload", {
@@ -50,14 +60,12 @@ export default function FileUpload({ onUploadSuccess }: Props) {
         Upload File
       </h2>
 
-      {/* Error */}
       {error && (
         <p className="mb-3 text-sm text-danger">
           {error}
         </p>
       )}
 
-      {/* Upload Row */}
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-4 py-2 text-sm text-muted hover:bg-border transition">
           <span>📄 Choose file</span>

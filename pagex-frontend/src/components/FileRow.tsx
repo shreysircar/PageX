@@ -6,6 +6,7 @@ import {
   RotateCcw,
   Download,
 } from "lucide-react";
+import { useDraggable } from "@dnd-kit/core";
 import FileTypeIcon from "@/components/FileIcon";
 
 interface Props {
@@ -27,32 +28,27 @@ export default function FileRow({
   onForceDelete,
   mode = "default",
 }: Props) {
-  const handleDownload = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: file.id,
+    });
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/files/${file.id}/download`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
+  const style = transform
+    ? {
+        transform: `translate(${transform.x}px, ${transform.y}px)`,
       }
-    );
+    : undefined;
 
-    if (!res.ok) return;
-
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.originalName;
-    a.click();
-
-    URL.revokeObjectURL(url);
-  };
+  const mimetype = file.mimetype ?? "unknown";
 
   return (
-    <tr className="group border-b border-border hover:bg-border">
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={`group border-b border-border hover:bg-border
+        ${isDragging ? "opacity-50" : ""}
+      `}
+    >
       {/* Checkbox */}
       <td className="px-3">
         <input
@@ -62,19 +58,23 @@ export default function FileRow({
         />
       </td>
 
-      {/* Name + Icon */}
+      {/* Name + Icon (DRAG HANDLE) */}
       <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          <FileTypeIcon mimetype={file.mimetype} />
-          <span className="truncate font-medium text-foreground">
-            {file.originalName}
+        <div
+          className="flex items-center gap-3 cursor-grab"
+          {...listeners}
+          {...attributes}
+        >
+          <FileTypeIcon mimetype={mimetype} />
+          <span className="truncate font-medium">
+            {file.originalName ?? "Untitled"}
           </span>
         </div>
       </td>
 
       {/* Type */}
       <td className="px-4 py-3 text-muted">
-        {file.mimetype}
+        {mimetype === "unknown" ? "—" : mimetype}
       </td>
 
       {/* Duration */}
@@ -84,13 +84,13 @@ export default function FileRow({
 
       {/* Actions */}
       <td className="px-4 py-3 text-right">
-        <div className="flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
+        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100">
           <button onClick={() => onPreview(file)}>
             <Eye className="h-4 w-4" />
           </button>
 
           {mode === "default" && (
-            <button onClick={handleDownload}>
+            <button>
               <Download className="h-4 w-4" />
             </button>
           )}

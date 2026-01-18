@@ -19,8 +19,7 @@ export default function TrashPage() {
     try {
       const data = await apiRequest("/files/trash");
       setFiles(data);
-    } catch (err) {
-      console.error("Failed to load trash", err);
+    } catch {
       toast("Failed to load trash", "danger");
     } finally {
       setLoading(false);
@@ -35,7 +34,7 @@ export default function TrashPage() {
   const handleRestore = async (id: string) => {
     try {
       await apiRequest(`/files/${id}/restore`, { method: "POST" });
-      setFiles((prev) => prev.filter((f) => f.id !== id));
+      await fetchTrash();
       toast("File restored");
     } catch {
       toast("Restore failed", "danger");
@@ -50,8 +49,7 @@ export default function TrashPage() {
       await apiRequest(`/files/${confirmId}/force`, {
         method: "DELETE",
       });
-
-      setFiles((prev) => prev.filter((f) => f.id !== confirmId));
+      await fetchTrash();
       toast("File permanently deleted", "danger");
     } catch {
       toast("Delete failed", "danger");
@@ -68,7 +66,6 @@ export default function TrashPage() {
           method: "DELETE",
         });
       }
-
       setFiles([]);
       toast("Trash emptied", "danger");
     } catch {
@@ -105,14 +102,15 @@ export default function TrashPage() {
           <p className="text-sm text-muted">Trash is empty</p>
         ) : (
           <FileList
-            files={files}
+            items={files.map((f) => ({ type: "file", ...f }))} // ✅ FIX
             selectedIds={[]}
             onSelect={() => {}}
             onSelectAll={() => {}}
             onPreview={() => {}}
             onDelete={handleRestore}
             onForceDelete={(id) => setConfirmId(id)}
-            mode="trash"
+            onFolderClick={() => {}}
+            mode="trash" // ✅ CRITICAL
           />
         )}
       </div>

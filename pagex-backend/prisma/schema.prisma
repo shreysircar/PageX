@@ -12,13 +12,14 @@ model User {
   password  String
   files     File[]
   createdAt DateTime @default(now())
+  folders Folder[]
 }
 
 model File {
   id            String   @id @default(cuid())
   filename      String
   originalName  String
-  mimetype      String
+  mimetype      String?
   size          Int
   path          String
 
@@ -32,8 +33,20 @@ model File {
   deletedAt      DateTime? 
   user          User     @relation(fields: [userId], references: [id])
   createdAt     DateTime @default(now())
+
+  folderId  String?
+  folder    Folder? @relation(fields: [folderId], references: [id])
 }
 
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime @default(now())
+
+  files     File[]
+  user      User     @relation(fields: [userId], references: [id])
+}
 
 model Embedding {
   id        String   @id @default(cuid())

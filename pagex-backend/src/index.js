@@ -6,6 +6,7 @@ import { authMiddleware } from "./middleware/auth.middleware.js";
 import fileRoutes from "./routes/file.routes.js";
 import searchRoutes from "./routes/search.routes.js";
 import { cleanupTrashedFiles } from "./utils/trashCleanup.js";
+import folderRoutes from "./routes/folder.routes.js";
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/files", fileRoutes);
 app.use("/search", searchRoutes);
+app.use("/folders", folderRoutes);
 
 // Health check
 app.get("/", (req, res) => {

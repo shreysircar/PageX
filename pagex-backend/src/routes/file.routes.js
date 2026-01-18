@@ -145,6 +145,56 @@ router.get("/trash", authMiddleware, async (req, res) => {
   res.json(files);
 });
 
+/* =========================
+   MOVE FILE TO FOLDER / ROOT
+========================= */
+router.patch("/:id/move", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { folderId } = req.body;
+    const userId = req.user.id;
+
+    // Ensure file exists & belongs to user & not in trash
+    const file = await prisma.file.findFirst({
+      where: {
+        id,
+        userId,
+        deletedAt: null,
+      },
+    });
+
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    // If folderId is provided, ensure folder belongs to user
+    if (folderId) {
+      const folder = await prisma.folder.findFirst({
+        where: {
+          id: folderId,
+          userId,
+        },
+      });
+
+      if (!folder) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+    }
+
+    const updated = await prisma.file.update({
+      where: { id },
+      data: {
+        folderId: folderId ?? null,
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error("Move file error:", err);
+    res.status(500).json({ message: "Failed to move file" });
+  }
+});
+
 
 // DOWNLOAD FILE
 router.get("/:id/download", authMiddleware, async (req, res) => {
